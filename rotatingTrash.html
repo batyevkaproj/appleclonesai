@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Scroll Rotation Example</title>
+    <style>
+        body {
+            margin: 0;
+            /* Total height needs to be large enough to allow significant scrolling */
+            /* Adjust height based on how much scroll controls the rotation */
+            height: 300vh; /* Example: 3 viewport heights */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            color: #333;
+            background-color: #f0f0f0; /* Light background */
+        }
+
+        /* Container for the 3D canvas */
+        #canvas-container {
+            position: fixed; /* Fixes it relative to the viewport */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh; /* Full viewport height */
+            z-index: -1; /* Place it behind other content */
+            overflow: hidden; /* Prevent scrollbars on the container */
+        }
+
+        canvas {
+            display: block; /* Prevent extra space below canvas */
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Content sections for scrolling */
+        .scroll-section {
+            height: 100vh; /* Make each section viewport height */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative; /* Needed for z-index stacking if required, but z-index on canvas works */
+            z-index: 1;
+        }
+
+        .scroll-section h1 {
+            background-color: rgba(255, 255, 255, 0.8); /* Semi-transparent white background */
+            padding: 20px 40px;
+            border-radius: 10px;
+            max-width: 80%;
+            font-size: 2em;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        #start-section {
+             background-color: rgba(200, 220, 255, 0.3); /* Light blueish tint */
+        }
+
+         /* This section is where the rotation primarily happens */
+        #rotate-section {
+             /* No background, allows seeing the 3D object clearly */
+        }
+         #rotate-section h1 {
+             opacity: 0.8; /* Slightly fade text when over the model */
+         }
+
+
+        #end-section {
+            background-color: rgba(220, 255, 200, 0.3); /* Light greenish tint */
+        }
+
+         /* Loading indicator */
+        #loader {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #555;
+            font-size: 1.2em;
+            z-index: 10; /* Above canvas, below final content if needed */
+            background: rgba(255,255,255,0.9);
+            padding: 15px 25px;
+            border-radius: 8px;
+            display: block; /* Show initially */
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Fixed container for the Three.js canvas -->
+    <div id="canvas-container">
+        <canvas id="render-canvas"></canvas>
+    </div>
+    <div id="loader">Loading 3D Model...</div>
+
+    <!-- Scrollable content sections -->
+    <div class="scroll-section" id="start-section">
+        <h1>Scroll Down to Begin Rotation</h1>
+    </div>
+
+    <div class="scroll-section" id="rotate-section">
+         <h1>The object rotates as you scroll through this section</h1>
+    </div>
+
+    <div class="scroll-section" id="end-section">
+        <h1>Rotation Complete. Keep Scrolling!</h1>
+    </div>
+
+    <!-- Include Three.js library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <!-- Include GLTFLoader addon -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
+
+    <script>
+        // --- Basic Setup ---
+        const scene = new THREE.Scene();
+        scene.background = null; // Make scene background transparent initially
+        const canvas = document.getElementById('render-canvas');
+        const canvasContainer = document.getElementById('canvas-container');
+        const loaderElement = document.getElementById('loader');
+
+        // Renderer
+        const renderer = new THREE.WebGLRenderer({
+            canvas: canvas,
+            antialias: true,
+            alpha: true // IMPORTANT for transparency
+        });
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+
+        // Camera
+        const camera = new THREE.PerspectiveCamera(
+            50, // Field of View
+            canvasContainer.clientWidth / canvasContainer.clientHeight, // Aspect Ratio
+            0.1, // Near clip plane
+            1000 // Far clip plane
+        );
+        camera.position.z = 5; // Position camera back
+        camera.position.y = 1; // Slightly above center
+
+
+        // --- Lighting ---
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.6); // Soft white light
+        scene.add(ambientLight);
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8); // Stronger directional light
+        directionalLight.position.set(5, 10, 7.5);
+        scene.add(directionalLight);
+
+        // --- Model Loading ---
+        let model = null; // To hold the loaded model
+        const loader = new THREE.GLTFLoader();
+        const modelUrl = 'https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/Duck/glTF-Binary/Duck.glb';
+
+        loader.load(
+            modelUrl,
+            // onLoad callback
+            function (gltf) {
+                model = gltf.scene;
+                // Optional: Adjust scale and position if needed
+                model.scale.set(1.5, 1.5, 1.5);
+                model.position.y = -0.5; // Adjust vertical position
+                scene.add(model);
+                loaderElement.style.display = 'none'; // Hide loader
+                console.log('Model loaded successfully!');
+                animate(); // Start the animation loop ONLY after model is loaded
+            },
+            // onProgress callback (optional)
+            function (xhr) {
+                const percentLoaded = (xhr.loaded / xhr.total * 100);
+                loaderElement.textContent = `Loading: ${Math.round(percentLoaded)}%`;
+                // console.log((xhr.loaded / xhr.total * 100) + '% loaded');
+            },
+            // onError callback
+            function (error) {
+                console.error('An error happened loading the model:', error);
+                loaderElement.textContent = 'Error loading model.';
+            }
+        );
+
+        // --- Scroll Animation Logic ---
+        let targetRotationY = 0; // The rotation the model should aim for based on scroll
+        let currentRotationY = 0; // The current smoothed rotation of the model
+        const lerpFactor = 0.08; // Smoothing factor (0 to 1, lower is smoother/slower)
+
+        // Define the scroll range that controls the rotation
+        // Let's make the rotation happen primarily during the #rotate-section
+        const rotateSection = document.getElementById('rotate-section');
+        let scrollStart = 0; // Pixel value where rotation starts
+        let scrollEnd = 1; // Pixel value where rotation ends (will be calculated)
+
+        function updateScrollBounds() {
+            // Rotation starts roughly when the top of #rotate-section reaches the middle of the viewport
+            scrollStart = rotateSection.offsetTop - (window.innerHeight / 2);
+             // Rotation ends roughly when the bottom of #rotate-section leaves the middle of the viewport
+            scrollEnd = rotateSection.offsetTop + rotateSection.offsetHeight - (window.innerHeight / 2);
+             // Ensure start is not negative if section is near top
+             scrollStart = Math.max(0, scrollStart);
+        }
+
+        // Calculate initial bounds
+         window.addEventListener('load', updateScrollBounds); // Ensure section offsets are correct after load
+
+
+        function handleScroll() {
+            if (!model) return; // Don't do anything if model isn't loaded
+
+            const scrollY = window.scrollY;
+
+            // Calculate scroll progress within the defined range (0 to 1)
+            let scrollFraction = (scrollY - scrollStart) / (scrollEnd - scrollStart);
+            scrollFraction = Math.max(0, Math.min(1, scrollFraction)); // Clamp between 0 and 1
+
+            // Map scroll fraction to rotation (e.g., 0 to 360 degrees)
+            // Rotate around Y axis
+            targetRotationY = scrollFraction * Math.PI * 2; // Full 360 rotation (2 * PI radians)
+
+            // You could also rotate around X or Z, or combine them:
+            // model.rotation.x = scrollFraction * Math.PI / 2; // Example: 90 degree tilt
+        }
+
+        window.addEventListener('scroll', handleScroll);
+
+        // --- Animation Loop ---
+        function animate() {
+            requestAnimationFrame(animate); // Loop
+
+            if (model) {
+                // Smoothly interpolate current rotation towards the target rotation
+                currentRotationY += (targetRotationY - currentRotationY) * lerpFactor;
+                model.rotation.y = currentRotationY;
+            }
+
+            // Update camera aspect ratio and renderer size on resize
+            handleResize(); // Check resize within loop can be okay for simplicity here
+
+            renderer.render(scene, camera);
+        }
+
+        // --- Resize Handling ---
+         let resizeTimeout;
+         function onWindowResize() {
+             // Use a timeout to avoid excessive calls during resize drag
+             clearTimeout(resizeTimeout);
+             resizeTimeout = setTimeout(() => {
+                  updateScrollBounds(); // Recalculate scroll bounds on resize
+                  handleResize(); // Apply visual resize updates
+             }, 100); // Adjust delay as needed
+         }
+
+
+        function handleResize() {
+            const newWidth = canvasContainer.clientWidth;
+            const newHeight = canvasContainer.clientHeight;
+
+            if (camera.aspect !== newWidth / newHeight) { // Only update if aspect ratio changed
+                 camera.aspect = newWidth / newHeight;
+                 camera.updateProjectionMatrix();
+                 renderer.setSize(newWidth, newHeight);
+            }
+        }
+
+        window.addEventListener('resize', onWindowResize);
+
+        // Initial calculation
+        handleScroll(); // Set initial rotation based on initial scroll position (usually 0)
+        updateScrollBounds();
+        // Note: animate() is called inside the loader's onLoad callback
+
+    </script>
+</body>
+</html>
