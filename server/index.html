@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Login Frontend</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 { text-align: center; color: #333; margin-bottom: 25px; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #555; font-weight: bold; }
+        input[type="text"], input[type="password"] {
+            width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box;
+        }
+        button {
+            width: 100%; padding: 12px; background-color: #007bff; color: white; border: none;
+            border-radius: 4px; cursor: pointer; font-size: 1em; transition: background-color 0.2s ease;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #cccccc; cursor: not-allowed; }
+        #logout-button { background-color: #dc3545; margin-top: 15px; }
+        #logout-button:hover { background-color: #c82333; }
+        #status, #error { text-align: center; margin-top: 15px; font-weight: bold; min-height: 1.2em; }
+        #status { color: green; }
+        #error { color: red; }
+        #logged-in-section p { text-align: center; font-size: 1.1em; color: #333; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Login Form View -->
+        <div id="login-section">
+            <h1>Login</h1>
+            <form id="login-form" novalidate>
+                 <!-- CSRF Token no longer needed in form (handled via header/cookie) -->
+                 <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" id="login-button">Login</button>
+            </form>
+        </div>
+
+        <!-- Logged In View -->
+        <div id="logged-in-section" class="hidden">
+            <h1>Welcome!</h1>
+            <p>You are logged in as: <strong id="logged-in-user"></strong></p>
+            <p><em>(Session managed by backend)</em></p>
+             <button id="logout-button">Logout</button>
+        </div>
+
+        <!-- Status/Error Messages -->
+        <p id="status"></p>
+        <p id="error"></p>
+        <p style="text-align: center; font-size: 0.8em; color: #888; margin-top: 20px;">
+            Interacting with backend API. Requires HTTPS for secure cookies.
+        </p>
+    </div>
+
+
+    <script>
+        // --- Configuration ---
+        const API_BASE_URL = 'http://localhost:8000'; // Change to your deployed backend URL (HTTPS recommended)
+        const SESSION_COOKIE_NAME = 'my_app_session_id'; // Match backend
+        const CSRF_COOKIE_NAME = 'my_app_csrf_token'; // Match backend
+        const CSRF_TOKEN_HEADER = "X-CSRF-Token";      // Match backend
+
+        // --- DOM Elements ---
+        const loginSection = document.getElementById('login-section');
+        const loggedInSection = document.getElementById('logged-in-section');
+        const loginForm = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginButton = document.getElementById('login-button');
+        const logoutButton = document.getElementById('logout-button');
+        const loggedInUserSpan = document.getElementById('logged-in-user');
+        const statusMsg = document.getElementById('status');
+        const errorMsg = document.getElementById('error');
+
+        // --- State ---
+        let isLoading = false;
+        // No need to store CSRF token in JS var, read from cookie when needed
+
+        // --- Cookie Helper Functions (Only Get needed now for CSRF) ---
+        /** Gets a cookie by name. */
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) {
+                    const value = c.substring(nameEQ.length, c.length);
+                    console.log(`Cookie get: ${name}=${value ? value.substring(0,8)+'...' : 'null'}`);
+                    return value;
+                }
+            }
+            console.log(`Cookie get: ${name} not found`);
+            return null;
+        }
+
+        // Delete cookie function (optional, server primarily handles clearing)
+        function deleteCookie(name) {
+            console.log(`Attempting client-side clear for cookie: ${name}`);
+            document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
+            // Note: Cannot clear HttpOnly cookies from JS.
+        }
+
+        // --- API Call Helper ---
+        async function apiRequest(endpoint, options = {}) {
+            const url = `${API_BASE_URL}${endpoint}`;
+            const defaultHeaders = {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+            };
+
+            // Add CSRF token header for relevant methods (POST, PUT, DELETE etc.)
+            // For Double Submit Cookie: Read token from the CSRF cookie
+             if (options.method && ['POST', 'PUT', 'DELETE', 'PATCH'].includes(options.method.toUpperCase())) {
+                const csrfToken = getCookie(CSRF_COOKIE_NAME);
+                if (csrfToken) {
+                    defaultHeaders[CSRF_TOKEN_HEADER] = csrfToken;
+                    console.log(`Added ${CSRF_TOKEN_HEADER} header: ${csrfToken.substring(0,8)}...`);
+                } else {
+                     console.warn(`CSRF Cookie (${CSRF_COOKIE_NAME}) not found for ${options.method} request to ${endpoint}`);
+                     // Depending on backend setup, this request might fail CSRF check
+                }
+            }
+
+
+            const config = {
+                ...options,
+                headers: {
+                    ...defaultHeaders,
+                    ...options.headers,
+                },
+                // Important for sending/receiving cookies
+                credentials: 'include',
+            };
+
+            console.log(`API Request: ${config.method || 'GET'} ${url}`, config.body ? JSON.parse(config.body) : '');
+
+            const response = await fetch(url, config);
+
+            const responseData = {
+                ok: response.ok,
+                status: response.status,
+                data: null,
+                error: null,
+            };
+
+            try {
+                const json = await response.json();
+                if (response.ok) {
+                    responseData.data = json;
+                    console.log(`API Response OK (${response.status}):`, json);
+                } else {
+                    responseData.error = json.detail || `HTTP error ${response.status}`;
+                    console.warn(`API Response Error (${response.status}):`, json);
+                }
+            } catch (e) {
+                // Handle cases where response is not JSON or network error
+                if (!responseData.error) { // Avoid overwriting specific API error
+                     responseData.error = `Network error or invalid JSON response (Status: ${response.status})`;
+                }
+                 console.error(`API Fetch Error (${response.status}):`, e);
+            }
+
+            return responseData;
+        }
+
+
+        // --- UI Update Functions ---
+        function showLoading(button, message = "Processing...") {
+            isLoading = true;
+            button.disabled = true;
+            button.textContent = message;
+            statusMsg.textContent = ''; errorMsg.textContent = '';
+        }
+
+        function hideLoading(button, originalText) {
+            isLoading = false;
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+
+        function showLoginView() {
+            loginSection.classList.remove('hidden');
+            loggedInSection.classList.add('hidden');
+            usernameInput.value = ''; passwordInput.value = '';
+            statusMsg.textContent = ''; errorMsg.textContent = '';
+        }
+
+        function showLoggedInView(username) {
+            loginSection.classList.add('hidden');
+            loggedInSection.classList.remove('hidden');
+            loggedInUserSpan.textContent = username || 'Unknown';
+            statusMsg.textContent = ''; errorMsg.textContent = '';
+        }
+
+        // --- Event Handlers ---
+        async function handleLogin(event) {
+            event.preventDefault();
+            if (isLoading) return;
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!username || !password) {
+                errorMsg.textContent = 'Please enter both username and password.';
+                return;
+            }
+
+            showLoading(loginButton, 'Logging in...');
+            errorMsg.textContent = '';
+
+            const response = await apiRequest('/login', {
+                method: 'POST',
+                body: JSON.stringify({ username, password }),
+            });
+
+            hideLoading(loginButton, 'Login');
+
+            if (response.ok && response.data) {
+                statusMsg.textContent = 'Login successful!'; // Backend message is usually not shown
+                // No need to handle cookies here, server sets them
+                // The response.data contains username and CSRF token, but we don't strictly need the token here
+                // as it's also set in the CSRF cookie by the server.
+                showLoggedInView(response.data.username);
+            } else {
+                errorMsg.textContent = response.error || 'Login failed. Please try again.';
+                showLoginView(); // Ensure login view is shown on error
+            }
+        }
+
+        async function handleLogout() {
+            if (isLoading) return;
+
+            showLoading(logoutButton, 'Logging out...');
+            errorMsg.textContent = '';
+
+            // Logout requires POST and CSRF token header
+            const response = await apiRequest('/logout', {
+                method: 'POST',
+                // Body is empty for this logout endpoint
+            });
+
+            hideLoading(logoutButton, 'Logout');
+             // Client-side cleanup regardless of API response is good practice
+             deleteCookie(CSRF_COOKIE_NAME); // Attempt to clear CSRF cookie
+             // Cannot clear HttpOnly session cookie from JS
+
+            if (response.ok) {
+                statusMsg.textContent = "You have been logged out.";
+                showLoginView();
+            } else {
+                // Even on error, attempt to show login view as session is likely invalid
+                 errorMsg.textContent = `Logout failed: ${response.error || 'Unknown error'}. Forcing client logout.`;
+                 showLoginView();
+            }
+        }
+
+
+        // --- Initialization ---
+        async function initializeApp() {
+            console.log("Initializing frontend app...");
+            // Check if session *might* exist by checking cookie presence (optional)
+            // const sessionCookie = getCookie(SESSION_COOKIE_NAME); // We can't read HttpOnly anyway
+            // console.log("Session cookie check (client-side, illustrative only):", sessionCookie ? "Exists" : "Not Found");
+
+            statusMsg.textContent = "Checking session status...";
+            errorMsg.textContent = '';
+
+            const response = await apiRequest('/session'); // GET request
+
+            statusMsg.textContent = ''; // Clear checking message
+
+            if (response.ok && response.data) {
+                console.log("Session restored:", response.data.username);
+                // Server refreshed cookies, including new CSRF cookie
+                showLoggedInView(response.data.username);
+            } else {
+                 console.warn("No active session found or session check failed:", response.error);
+                 // Ensure any potentially stale client-side CSRF cookie is cleared if session is invalid
+                 deleteCookie(CSRF_COOKIE_NAME);
+                showLoginView(); // Show login form by default
+            }
+        }
+
+        // --- Attach Event Listeners ---
+        loginForm.addEventListener('submit', handleLogin);
+        logoutButton.addEventListener('click', handleLogout);
+
+        // --- Run Initialization on Page Load ---
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+    </script>
+
+</body>
+</html>

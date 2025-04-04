@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clean URL Path</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        #current-url, #cleaned-url { font-family: monospace; background-color: #eee; padding: 5px; display: inline-block; margin-bottom: 10px; word-break: break-all;}
+        button { padding: 10px 15px; font-size: 1em; cursor: pointer; margin-top: 10px; }
+        #status { margin-top: 15px; color: green; font-weight: bold;}
+        #error { margin-top: 15px; color: red; font-weight: bold;}
+
+    </style>
+</head>
+<body>
+
+    <h1>URL Path Cleaner</h1>
+
+    <p>Current URL in Address Bar:</p>
+    <div id="current-url">Loading...</div>
+
+    <button onclick="cleanUrlToOrigin()">Clean URL Path/Parameters</button>
+
+    <p id="status"></p>
+    <p id="error"></p>
+
+    <script>
+        const currentUrlDiv = document.getElementById('current-url');
+        const statusP = document.getElementById('status');
+        const errorP = document.getElementById('error');
+
+        // Function to display the current URL shown in the address bar
+        function displayCurrentUrl() {
+            currentUrlDiv.textContent = window.location.href;
+        }
+
+        // Function to clean the URL to its origin
+        function cleanUrlToOrigin() {
+            statusP.textContent = ''; // Clear previous messages
+            errorP.textContent = '';
+
+            try {
+                const currentHref = window.location.href;
+                console.log("Original href:", currentHref);
+
+                // Use the URL constructor to easily parse the URL components
+                const urlObject = new URL(currentHref);
+
+                // The 'origin' property gives protocol + hostname + port (if not default)
+                // Example: "https://aistudio.google.com" or "http://localhost:8080"
+                const origin = urlObject.origin;
+                console.log("Calculated origin:", origin);
+
+                // Check if the URL actually needs cleaning.
+                // No need to update if it's already just the origin or origin + trailing slash.
+                if (currentHref === origin || currentHref === origin + '/') {
+                    statusP.textContent = "URL is already clean. No changes made.";
+                    console.log("URL already clean.");
+                    return; // Exit the function
+                }
+
+                // --- Update the URL in the address bar ---
+                // history.replaceState(stateObject, title, url)
+                // - stateObject: An object associated with the new history entry (can be null).
+                // - title: Usually ignored by browsers, pass an empty string ''.
+                // - url: The new URL to display. Must be same-origin.
+                history.replaceState(null, '', origin);
+
+                // Update the display to reflect the change
+                displayCurrentUrl();
+                statusP.textContent = `URL successfully cleaned to: ${origin}`;
+                console.log("URL updated via replaceState.");
+
+            } catch (e) {
+                // Handle potential errors (e.g., security errors if trying cross-origin, unlikely here)
+                console.error("Error cleaning URL:", e);
+                errorP.textContent = "An error occurred while trying to clean the URL.";
+            }
+        }
+
+        // --- Run on page load ---
+        // Display the initial URL when the script loads
+        displayCurrentUrl();
+
+        // Optional: Automatically clean the URL shortly after page load
+        // Uncomment the line below to enable automatic cleaning after 1 second
+        // setTimeout(cleanUrlToOrigin, 1000);
+
+    </script>
+
+    <hr>
+    <p><strong>Note:</strong> Clicking the button will change the URL displayed in your browser's address bar back to its base (e.g., `https://yourdomain.com/`) without reloading the page. This uses the `history.replaceState` API.</p>
+
+</body>
+</html>

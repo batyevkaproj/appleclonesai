@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulated Secure Login</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            padding: 20px;
+            background-color: #f4f4f4;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            background-color: #fff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 25px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box; /* Include padding in width */
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.2s ease;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        #logout-button {
+            background-color: #dc3545;
+            margin-top: 15px;
+        }
+        #logout-button:hover {
+            background-color: #c82333;
+        }
+        #status, #error {
+            text-align: center;
+            margin-top: 15px;
+            font-weight: bold;
+            min-height: 1.2em; /* Prevent layout shifts */
+        }
+        #status { color: green; }
+        #error { color: red; }
+        #logged-in-section p {
+            text-align: center;
+            font-size: 1.1em;
+            color: #333;
+        }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- Login Form View -->
+        <div id="login-section">
+            <h1>Login</h1>
+            <form id="login-form" novalidate>
+                 <!-- Conceptual CSRF Token Field - In real apps, server populates this -->
+                 <input type="hidden" id="csrf-token-input" name="_csrf" value="">
+                 <div class="form-group">
+                    <label for="username">Username</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <button type="submit" id="login-button">Login</button>
+            </form>
+        </div>
+
+        <!-- Logged In View -->
+        <div id="logged-in-section" class="hidden">
+            <h1>Welcome!</h1>
+            <p>You are logged in as: <strong id="logged-in-user"></strong></p>
+            <p><em>(Session simulated with cookies)</em></p>
+             <button id="logout-button">Logout</button>
+        </div>
+
+        <!-- Status/Error Messages -->
+        <p id="status"></p>
+        <p id="error"></p>
+        <p style="text-align: center; font-size: 0.8em; color: #888; margin-top: 20px;">
+            Note: This is a FRONT-END simulation. Real security requires a backend.
+        </p>
+    </div>
+
+
+    <script>
+        // --- Constants & Configuration ---
+        const MOCK_API_DELAY = 800; // Milliseconds to simulate network latency
+        const SESSION_COOKIE_NAME = 'simulated_session_token';
+        const CSRF_TOKEN_NAME = 'simulated_csrf_token'; // Name for conceptual token storage
+
+        // --- DOM Elements ---
+        const loginSection = document.getElementById('login-section');
+        const loggedInSection = document.getElementById('logged-in-section');
+        const loginForm = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginButton = document.getElementById('login-button');
+        const logoutButton = document.getElementById('logout-button');
+        const loggedInUserSpan = document.getElementById('logged-in-user');
+        const statusMsg = document.getElementById('status');
+        const errorMsg = document.getElementById('error');
+        const csrfInput = document.getElementById('csrf-token-input');
+
+        // --- State ---
+        let isLoading = false;
+        let currentCsrfToken = null; // Store the simulated CSRF token
+
+        // --- Mock API Functions ---
+
+        /** Mocks an API call to log in. */
+        async function mockApiLogin(username, password) {
+            console.log('Mock API: Attempting login for', username);
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    // Basic validation simulation
+                    if (!username || !password) {
+                        console.warn('Mock API: Login failed - Missing credentials');
+                        return reject({ status: 400, message: 'Username and password are required.' });
+                    }
+                    // Simulate successful login for specific credentials
+                    if (username === 'user' && password === 'password123') {
+                        const sessionToken = `fake-session-${Date.now()}-${Math.random()}`;
+                        const csrfToken = `fake-csrf-${Date.now()}-${Math.random()}`;
+                        console.log('Mock API: Login successful');
+                        resolve({
+                            status: 200,
+                            message: 'Login successful!',
+                            data: {
+                                username: username,
+                                sessionToken: sessionToken,
+                                csrfToken: csrfToken // Server would provide this
+                            }
+                        });
+                    } else {
+                         console.warn('Mock API: Login failed - Invalid credentials');
+                         reject({ status: 401, message: 'Invalid username or password.' });
+                    }
+                }, MOCK_API_DELAY);
+            });
+        }
+
+        /** Mocks an API call to log out. */
+        async function mockApiLogout(sessionToken, csrfToken) {
+             console.log('Mock API: Attempting logout');
+             // In a real app, the server would validate the session and CSRF token here
+             if (!sessionToken) {
+                 console.warn('Mock API: Logout requires session token (simulated)');
+                 // Might still proceed client-side, but log warning
+             }
+              if (!csrfToken) {
+                 console.warn('Mock API: Logout ideally requires CSRF token (simulated)');
+                 // Might still proceed client-side, but log warning
+             }
+
+             return new Promise((resolve) => {
+                 setTimeout(() => {
+                     console.log('Mock API: Logout processed (simulated)');
+                     resolve({ status: 200, message: 'Logged out successfully.' });
+                 }, MOCK_API_DELAY / 2); // Faster logout simulation
+             });
+        }
+
+        /** Mocks checking if a session token is valid. */
+         async function mockApiCheckSession(sessionToken) {
+             console.log('Mock API: Checking session token validity');
+             return new Promise((resolve, reject) => {
+                 setTimeout(() => {
+                     if (sessionToken && sessionToken.startsWith('fake-session-')) {
+                         // Simulate successful validation
+                         const csrfToken = `fake-csrf-${Date.now()}-${Math.random()}`; // New CSRF token per session check
+                          console.log('Mock API: Session token is valid (simulated)');
+                         resolve({
+                             status: 200,
+                             data: {
+                                 username: 'user', // Normally derived from session on server
+                                 csrfToken: csrfToken
+                             }
+                         });
+                     } else {
+                         console.warn('Mock API: Session token is invalid or missing');
+                         reject({ status: 401, message: 'Session invalid or expired.' });
+                     }
+                 }, MOCK_API_DELAY / 2);
+             });
+         }
+
+
+        // --- Cookie Helper Functions ---
+
+        /** Sets a cookie (client-side simulation - lacks HttpOnly, Secure). */
+        function setCookie(name, value, days = 7) {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            // Basic cookie. REAL security needs HttpOnly, Secure, SameSite=Strict/Lax set by SERVER.
+            document.cookie = name + "=" + (value || "") + expires + "; path=/; SameSite=Lax";
+            console.log(`Cookie set: ${name}=${value}`);
+        }
+
+        /** Gets a cookie by name. */
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const ca = document.cookie.split(';');
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                if (c.indexOf(nameEQ) == 0) {
+                    const value = c.substring(nameEQ.length, c.length);
+                     console.log(`Cookie get: ${name}=${value}`);
+                    return value;
+                }
+            }
+             console.log(`Cookie get: ${name} not found`);
+            return null;
+        }
+
+        /** Deletes a cookie by name. */
+        function deleteCookie(name) {
+            console.log(`Cookie delete attempt: ${name}`);
+            // Set expiry date to the past
+            document.cookie = name + '=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT; SameSite=Lax';
+        }
+
+        // --- UI Update Functions ---
+
+        function showLoading(button, message = "Processing...") {
+            isLoading = true;
+            button.disabled = true;
+            button.textContent = message;
+            statusMsg.textContent = ''; // Clear status/error while loading
+            errorMsg.textContent = '';
+        }
+
+        function hideLoading(button, originalText) {
+            isLoading = false;
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+
+        function showLoginView() {
+            loginSection.classList.remove('hidden');
+            loggedInSection.classList.add('hidden');
+            usernameInput.value = ''; // Clear form
+            passwordInput.value = '';
+             csrfInput.value = ''; // Clear conceptual token
+             currentCsrfToken = null;
+             statusMsg.textContent = '';
+             errorMsg.textContent = '';
+        }
+
+        function showLoggedInView(username, csrfToken) {
+            loginSection.classList.add('hidden');
+            loggedInSection.classList.remove('hidden');
+            loggedInUserSpan.textContent = username || 'Unknown';
+            currentCsrfToken = csrfToken; // Store CSRF token conceptually
+            csrfInput.value = csrfToken || ''; // Set hidden input (for simulation)
+            statusMsg.textContent = '';
+            errorMsg.textContent = '';
+        }
+
+        // --- Event Handlers ---
+
+        async function handleLogin(event) {
+            event.preventDefault(); // Prevent default form submission
+            if (isLoading) return;
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value; // Don't trim password
+
+            // Basic client-side validation
+            if (!username || !password) {
+                errorMsg.textContent = 'Please enter both username and password.';
+                return;
+            }
+
+            showLoading(loginButton, 'Logging in...');
+            errorMsg.textContent = ''; // Clear previous errors
+
+            try {
+                const response = await mockApiLogin(username, password);
+
+                // --- SUCCESS ---
+                console.log("Login successful response:", response);
+                statusMsg.textContent = response.message;
+
+                // Store session token in cookie (SIMULATION - insecure method)
+                setCookie(SESSION_COOKIE_NAME, response.data.sessionToken);
+
+                 // Store CSRF token and update UI
+                showLoggedInView(response.data.username, response.data.csrfToken);
+
+            } catch (error) {
+                // --- FAILURE ---
+                console.error("Login failed:", error);
+                errorMsg.textContent = error.message || 'Login failed. Please try again.';
+                // Ensure UI is reset to login view if somehow stuck
+                showLoginView();
+
+            } finally {
+                hideLoading(loginButton, 'Login');
+            }
+        }
+
+        async function handleLogout() {
+            if (isLoading) return;
+
+            showLoading(logoutButton, 'Logging out...');
+             errorMsg.textContent = '';
+
+             const sessionToken = getCookie(SESSION_COOKIE_NAME);
+             // Send conceptual CSRF token with request
+             const csrfTokenToSend = currentCsrfToken;
+
+            try {
+                // Call mock logout API (doesn't do much client-side)
+                await mockApiLogout(sessionToken, csrfTokenToSend);
+
+                 statusMsg.textContent = "You have been logged out.";
+
+            } catch (error) {
+                 // Logout API errors usually aren't critical client-side
+                 console.error("Logout API simulation error:", error);
+                 errorMsg.textContent = "Could not reach logout service, logging out client-side.";
+            } finally {
+                 // --- ALWAYS clean up client-side state regardless of API response ---
+                 deleteCookie(SESSION_COOKIE_NAME); // Remove session cookie
+                 currentCsrfToken = null; // Clear CSRF token
+                 hideLoading(logoutButton, 'Logout');
+                 showLoginView(); // Show the login form again
+            }
+        }
+
+
+        // --- Initialization ---
+        async function initializeApp() {
+            console.log("Initializing app...");
+            const sessionToken = getCookie(SESSION_COOKIE_NAME);
+
+            if (sessionToken) {
+                console.log("Found existing session token. Validating...");
+                statusMsg.textContent = "Checking existing session...";
+                try {
+                    // Validate the token with the mock API
+                    const response = await mockApiCheckSession(sessionToken);
+                    console.log("Session check successful:", response);
+                    statusMsg.textContent = "Session restored.";
+                    // Update UI to logged-in state
+                    showLoggedInView(response.data.username, response.data.csrfToken);
+                } catch (error) {
+                    // Token invalid or expired
+                    console.warn("Session check failed:", error);
+                    statusMsg.textContent = ""; // Clear status
+                    errorMsg.textContent = "Your session has expired. Please login again.";
+                    deleteCookie(SESSION_COOKIE_NAME); // Clean up invalid cookie
+                    showLoginView(); // Show login form
+                }
+            } else {
+                console.log("No existing session token found.");
+                showLoginView(); // Show login form by default
+            }
+        }
+
+        // --- Attach Event Listeners ---
+        loginForm.addEventListener('submit', handleLogin);
+        logoutButton.addEventListener('click', handleLogout);
+
+        // --- Run Initialization on Page Load ---
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+    </script>
+
+</body>
+</html>
