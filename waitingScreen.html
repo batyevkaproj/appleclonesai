@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page Loading Example</title>
+    <style>
+        /* --- Loading Overlay Styles --- */
+        #loading-overlay {
+            position: fixed; /* Cover the entire viewport */
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh; /* Full viewport height */
+            background-color: #ffffff; /* White background, change as needed */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999; /* Ensure it's on top of everything */
+            opacity: 1;
+            /* Smooth fade-out transition */
+            transition: opacity 0.7s ease-out;
+            /* Prevent interaction with content below while visible */
+            pointer-events: auto;
+        }
+
+        #loading-overlay.hidden {
+            opacity: 0;
+             /* Allow interaction with content below once hidden */
+            pointer-events: none;
+        }
+
+        /* --- Spinner Image Styles --- */
+        #loading-spinner {
+            width: 80px; /* Adjust size as needed */
+            height: 80px;
+            /* Rotation Animation */
+            animation: spin 1.5s linear infinite;
+        }
+
+        /* --- Keyframes for Rotation --- */
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* --- Basic Body & Content Styles (for demo) --- */
+        body {
+            font-family: sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            /* Make body initially hidden until loader is gone? Optional. */
+            /* visibility: hidden; */
+        }
+        /* body.loaded {
+            visibility: visible;
+        } */
+
+        .content {
+            max-width: 800px;
+            margin: 40px auto;
+            opacity: 0; /* Start hidden */
+            transition: opacity 0.5s ease-in 0.2s; /* Fade in slightly after loader fades */
+        }
+
+         .content.visible {
+            opacity: 1;
+        }
+
+        img.placeholder {
+            max-width: 100%;
+            height: auto;
+            margin: 20px 0;
+            border: 1px solid #eee;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay">
+        <!-- You can replace this SVG with your own spinner image/gif -->
+        <img id="loading-spinner" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1MCIgaGVpZ2h0PSI1MCIgdmlld0JveD0iMCAwIDUwIDUwIiBzdHlsZT0iYmFja2dyb3VuZDpub25lO2Rpc3BsYXk6YmxvY2s7c2hhcGUtcmVuZGVyaW5nOmF1dG87Ij4KICA8Y2lyY2xlIGN4PSIyNSIgY3k9IjI1IiByPSIxOCIgc3Ryb2tlPSIjMDA3YWZmIiBzdHJva2Utd2lkdGg9IjQiIGZpbGw9Im5vbmUiIHN0cm9rZS1kYXNoYXJyYXk9IjUxLjM0OTE4MjEyNzM5ODg1IDI1LjY3NDU5MTA2MzY5OTQyNSI+CiAgICA8YW5pbWF0ZVRyYW5zZm9ybSBhdHRyaWJ1dGVOYW1lPSJ0cmFuc2Zvcm0iIHR5cGU9InJvdGF0ZSIgcmVwZWF0Q291bnQ9ImluZGVmaW5pdGUiIGR1cj0iMXMiIHZhbHVlcz0iMCAyNSAyNTszNjAgMjUgMjUiIGtleVRpbWVzPSIwOzEiLz4KICA8L2NpcmNsZT4KPC9zdmc+" alt="Loading...">
+        <!-- Or use an actual image file: -->
+        <!-- <img id="loading-spinner" src="path/to/your/spinner.gif" alt="Loading..."> -->
+    </div>
+
+    <!-- Main Page Content -->
+    <div class="content">
+        <h1>Welcome to the Page!</h1>
+        <p>This content appears after the loading screen finishes.</p>
+        <p>Loading includes all resources like text, styles, scripts, and especially images below.</p>
+
+        <!-- Add some images to simulate loading time -->
+        <img class="placeholder" src="https://via.placeholder.com/800x200/cccccc/888888?text=Image+1+(Simulates+Load+Time)" alt="Placeholder Image 1">
+        <img class="placeholder" src="https://via.placeholder.com/800x200/dddddd/777777?text=Image+2+(Simulates+Load+Time)" alt="Placeholder Image 2">
+
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.</p>
+
+        <img class="placeholder" src="https://via.placeholder.com/800x200/eeeeee/666666?text=Image+3+(Simulates+Load+Time)" alt="Placeholder Image 3">
+
+        <p>Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.</p>
+    </div>
+
+    <script>
+        // --- Configuration ---
+        // Set the minimum time (in milliseconds) the loading screen should be visible.
+        // Set to 0 for no minimum wait (hides as soon as content loads).
+        const MINIMUM_WAIT_TIME = 1500; // e.g., 1.5 seconds minimum wait
+
+        // --- Logic ---
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const contentElement = document.querySelector('.content');
+        const startTime = performance.now(); // Record start time for minimum wait calculation
+
+        window.onload = () => {
+            const loadEndTime = performance.now();
+            const elapsedTime = loadEndTime - startTime;
+
+            // Calculate how much longer (if any) we need to wait
+            const remainingWait = Math.max(0, MINIMUM_WAIT_TIME - elapsedTime);
+
+            // console.log(`Page loaded in: ${elapsedTime.toFixed(0)}ms`); // Debugging
+            // console.log(`Minimum wait: ${MINIMUM_WAIT_TIME}ms`);       // Debugging
+            // console.log(`Remaining wait: ${remainingWait.toFixed(0)}ms`); // Debugging
+
+            // Set a timeout to hide the loader
+            setTimeout(() => {
+                // Add 'hidden' class to start the fade-out transition
+                loadingOverlay.classList.add('hidden');
+
+                // Make content visible
+                 contentElement.classList.add('visible');
+
+                // Optional: After the transition completes, set display:none
+                // This removes the overlay completely from the layout.
+                // The timeout duration should match the CSS transition duration.
+                setTimeout(() => {
+                    if (loadingOverlay) { // Check if element still exists
+                         loadingOverlay.style.display = 'none';
+                    }
+                }, 700); // Must match the transition duration in CSS (.7s)
+
+            }, remainingWait); // Wait for the calculated remaining time
+        };
+
+    </script>
+
+</body>
+</html>
