@@ -1,0 +1,650 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Name - Inspired by Apple (Single File w/ Routing)</title>
+    <!-- Favicon Placeholder (Optional) -->
+    <link rel="icon" href="data:;base64,iVBORw0KGgo=">
+
+    <style>
+        /* --- Base & Resets --- */
+        :root {
+            --c-black: #000000;
+            --c-white: #ffffff;
+            --c-dark-gray: #1d1d1f; /* Apple's typical dark text/bg */
+            --c-light-gray: #f5f5f7; /* Apple's typical light bg */
+            --c-medium-gray: #6e6e73; /* Apple's secondary text */
+            --c-blue: #007aff; /* Apple's primary action blue */
+            --c-light-blue: #eaf4ff; /* Lighter blue for hover/bg */
+
+            --font-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+
+            --nav-height: 44px; /* Typical Apple nav height */
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            font-size: 100%; /* Base font size, typically 16px */
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-system);
+            color: var(--c-dark-gray);
+            background-color: var(--c-white);
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            overflow-x: hidden; /* Prevent horizontal scroll */
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            display: block; /* Remove bottom space */
+        }
+
+        a {
+            color: var(--c-blue);
+            text-decoration: none;
+            transition: color 0.2s ease;
+            cursor: pointer; /* Make all links look clickable */
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        /* --- Utility Classes --- */
+        .bg-light { background-color: var(--c-light-gray); }
+        .bg-dark { background-color: var(--c-black); }
+        .bg-white { background-color: var(--c-white); }
+        .text-light { color: var(--c-light-gray); } /* Use on dark bg */
+
+
+        /* --- Global Navigation --- */
+        .global-nav {
+            background-color: rgba(255, 255, 255, 0.9); /* Slightly transparent white */
+            backdrop-filter: saturate(180%) blur(20px);
+            -webkit-backdrop-filter: saturate(180%) blur(20px);
+            height: var(--nav-height);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-content {
+            max-width: 1024px; /* Standard max-width */
+            margin: 0 auto;
+            padding: 0 20px;
+            height: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .nav-logo {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--c-dark-gray);
+            margin-right: auto; /* Push other links to the right */
+            padding: 0 10px; /* Easier to click */
+        }
+        .nav-logo:hover { text-decoration: none; }
+
+        .nav-links {
+            display: flex;
+            gap: 25px; /* Spacing between links */
+            font-size: 0.8rem;
+            margin: 0 20px; /* Spacing from logo and CTA */
+        }
+
+        .nav-links a { /* Target specific links within nav */
+            color: var(--c-dark-gray);
+            transition: color 0.2s ease;
+        }
+
+        .nav-links a:hover {
+            color: var(--c-blue);
+            text-decoration: none;
+        }
+
+        .nav-cta {
+            font-size: 0.75rem;
+            padding: 5px 12px !important; /* Override button defaults for nav */
+        }
+
+        /* --- Buttons --- */
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 980px; /* Makes it pill-shaped */
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: center;
+            border: none;
+            transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease;
+        }
+
+        .button:hover {
+            text-decoration: none;
+            transform: scale(1.03);
+        }
+
+        .button:active {
+            transform: scale(0.98);
+        }
+
+        .button-primary {
+            background-color: var(--c-blue);
+            color: var(--c-white);
+        }
+        .button-primary:hover { background-color: #006adc; } /* Slightly darker blue */
+
+        .button-secondary {
+            background-color: var(--c-medium-gray);
+            color: var(--c-white);
+        }
+        .button-secondary:hover { background-color: #5a5a5e; }
+
+        .bg-dark .button-secondary { /* Secondary button on dark background */
+             background-color: var(--c-light-gray);
+             color: var(--c-dark-gray);
+        }
+        .bg-dark .button-secondary:hover { background-color: #e0e0e0; }
+
+        /* --- Text Link with Arrow (Used within sections, not for routing) --- */
+        .link-arrow {
+            color: var(--c-blue);
+            font-weight: 600;
+            display: inline-block;
+            position: relative;
+            padding-right: 1.2em; /* Space for arrow */
+        }
+        .link-arrow::after {
+            content: '›'; /* Right pointing angle bracket */
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 1.2em;
+            font-weight: bold;
+            transition: transform 0.2s ease;
+        }
+        .link-arrow:hover::after {
+            transform: translate(3px, -50%);
+        }
+        .bg-dark .link-arrow { color: var(--c-blue); } /* Keep blue on dark */
+        .bg-dark .link-arrow:hover { color: #4facff; }
+
+        /* --- Sections --- */
+        .section {
+            padding: 80px 20px;
+            text-align: center;
+            overflow: hidden; /* Prevent content bleed */
+        }
+
+        .section-content {
+            max-width: 980px; /* Common Apple content width */
+            margin: 0 auto;
+        }
+
+        /* --- Page Routing Sections --- */
+        .page-section {
+            display: none; /* Hide all pages by default */
+            opacity: 0;
+            transition: opacity 0.4s ease-in-out;
+        }
+        .page-section.active {
+            display: block; /* Show the active page */
+            opacity: 1;
+        }
+
+        /* --- Typography Styles --- */
+        .headline { /* Main hero headline */
+            font-size: clamp(2.5rem, 6vw, 4rem); /* Responsive font size */
+            font-weight: 700;
+            margin-bottom: 0.5em;
+            line-height: 1.1;
+            letter-spacing: -0.015em;
+        }
+
+        .headline-medium { /* Section headlines */
+            font-size: clamp(2rem, 5vw, 3rem);
+            font-weight: 600;
+            margin-bottom: 0.6em;
+            line-height: 1.2;
+        }
+
+        .headline-small { /* Grid item headlines */
+             font-size: 1.3rem;
+             font-weight: 600;
+             margin-bottom: 0.5em;
+        }
+
+        .subheadline { /* Hero subheadline */
+            font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+            color: var(--c-medium-gray);
+            margin-bottom: 1.5em;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .bg-dark .subheadline { color: #a1a1a6; } /* Lighter gray on dark */
+
+        .body-copy { /* Standard paragraph text */
+            font-size: 1.1rem;
+            max-width: 700px;
+            margin: 0 auto 1.5em auto;
+            line-height: 1.6;
+        }
+        .bg-dark .body-copy { color: var(--c-light-gray); }
+
+        .body-copy-small { /* Smaller text like in grid */
+             font-size: 0.95rem;
+             color: var(--c-medium-gray);
+             line-height: 1.5;
+        }
+        .bg-dark .body-copy-small { color: #a1a1a6; }
+
+        /* --- Section Specific Styles --- */
+        .section-hero .cta-links {
+            margin-bottom: 3em;
+        }
+
+        .cta-links {
+            margin-top: 1.5em;
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap; /* Allow buttons to wrap on small screens */
+        }
+
+        .hero-image {
+            margin-top: 40px;
+        }
+
+        .feature-image {
+            margin: 0 auto 40px auto; /* Center image and add space below */
+            max-width: 80%; /* Don't let feature images get too huge */
+        }
+
+        .section-feature.bg-dark .feature-image,
+        .section-feature.bg-light .feature-image {
+             margin-bottom: 40px; /* Keep consistent spacing */
+        }
+
+
+        /* --- Grid Section --- */
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); /* Responsive grid */
+            gap: 40px;
+            margin-top: 40px;
+        }
+
+        .grid-item {
+            text-align: center;
+        }
+
+        .grid-icon {
+            margin: 0 auto 15px auto;
+            width: 60px; /* Control icon size */
+            height: 60px;
+            border-radius: 15px; /* Slightly rounded corners for icons */
+        }
+
+        /* --- Footer --- */
+        .global-footer {
+            background-color: var(--c-light-gray);
+            padding: 40px 20px 20px 20px;
+            font-size: 0.8rem;
+            color: var(--c-medium-gray);
+            margin-top: 50px; /* Add some space above footer */
+        }
+
+        .footer-content {
+            max-width: 1024px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .footer-copyright {
+            margin-bottom: 15px;
+            border-bottom: 1px solid #d2d2d7; /* Subtle separator */
+            padding-bottom: 15px;
+        }
+
+        .footer-links {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px 20px; /* Row and column gap */
+        }
+
+        .footer-links a {
+            color: var(--c-medium-gray);
+        }
+        .footer-links a:hover {
+            color: var(--c-dark-gray);
+        }
+
+        /* --- Responsive Adjustments --- */
+        @media (max-width: 768px) {
+            .global-nav {
+                /* Mobile menu toggle would be ideal here, but keeping simple for now */
+                height: auto; /* Allow wrap */
+                padding: 10px 0;
+            }
+            .nav-content {
+                flex-direction: column;
+                gap: 10px;
+            }
+            .nav-logo { margin: 0; }
+            .nav-links { font-size: 0.9rem; gap: 15px; justify-content: center; flex-wrap: wrap;}
+            .nav-cta { margin-top: 5px; }
+
+
+            .section { padding: 60px 15px; }
+
+            .headline { font-size: clamp(2rem, 8vw, 3rem); }
+            .headline-medium { font-size: clamp(1.8rem, 7vw, 2.5rem); }
+            .subheadline { font-size: clamp(1rem, 4vw, 1.2rem); }
+            .body-copy { font-size: 1rem; }
+
+            .grid-container {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+                gap: 30px;
+            }
+
+            .feature-image { max-width: 95%; }
+
+            .footer-links { justify-content: center; }
+        }
+
+        @media (max-width: 480px) {
+             .nav-links { font-size: 0.8rem; gap: 10px;}
+             .cta-links .button {
+                 width: 80%; /* Make buttons stack nicely */
+                 margin-bottom: 10px;
+             }
+             .grid-container {
+                grid-template-columns: 1fr; /* Stack grid items */
+                gap: 40px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <header class="global-nav">
+        <nav class="nav-content">
+            <!-- Add route-link class and data-target -->
+            <a href="#" class="nav-logo route-link" data-target="page-product" aria-label="Home"></a>
+            <ul class="nav-links">
+                <!-- Add route-link class and data-target -->
+                <li><a href="#" class="route-link" data-target="page-product">Product</a></li>
+                <li><a href="#" class="route-link" data-target="page-features">Features</a></li>
+                <li><a href="#" class="route-link" data-target="page-specs">Specs</a></li>
+                <li><a href="#" class="route-link" data-target="page-support">Support</a></li>
+            </ul>
+            <!-- Add route-link class and data-target -->
+            <a href="#" class="nav-cta button button-secondary route-link" data-target="page-buy">Buy Now</a>
+        </nav>
+    </header>
+
+    <main>
+        <!-- "Pages" Wrapper - Only one .page-section with .active class will be visible -->
+
+        <!-- Product Page (Hero) -->
+        <div id="page-product" class="page-section active"> <!-- Start with active class -->
+            <section class="section section-hero bg-light">
+                <div class="section-content">
+                    <h1 class="headline">Introducing Product Name</h1>
+                    <p class="subheadline">Simply revolutionary. Powerfully simple.</p>
+                    <div class="cta-links">
+                        <!-- Keep Learn More as generic # or route to features -->
+                        <a href="#" class="button button-primary route-link" data-target="page-features">Learn More</a>
+                         <!-- Add route-link class and data-target -->
+                        <a href="#" class="button button-secondary route-link" data-target="page-buy">Order Now</a>
+                    </div>
+                    <img src="https://via.placeholder.com/1000x500/f5f5f7/1d1d1f?text=Hero+Product+Image" alt="Main product view" class="hero-image">
+                </div>
+            </section>
+             <!-- You might add more content specific to the "Product" view here -->
+             <section class="section section-cta bg-white">
+                 <div class="section-content">
+                     <h2 class="headline-medium">Ready to experience Product Name?</h2>
+                     <div class="cta-links">
+                          <!-- Add route-link class and data-target -->
+                         <a href="#" class="button button-primary route-link" data-target="page-buy">Order Yours Today</a>
+                     </div>
+                 </div>
+             </section>
+        </div>
+
+        <!-- Features Page (Combines multiple sections) -->
+        <div id="page-features" class="page-section">
+            <!-- Feature Section 1 (Dark) -->
+            <section class="section section-feature bg-dark text-light">
+                <div class="section-content">
+                     <img src="https://via.placeholder.com/800x450/000000/ffffff?text=Feature+1+Visual" alt="Feature 1 visual description" class="feature-image">
+                    <h2 class="headline-medium">Incredible Performance</h2>
+                    <p class="body-copy">Experience speed like never before with our next-generation chip.</p>
+                     <div class="cta-links">
+                         <!-- This could link to specs or just be text -->
+                         <a href="#" class="link-arrow route-link" data-target="page-specs">Explore Performance</a>
+                     </div>
+                </div>
+            </section>
+
+            <!-- Feature Section 2 (Light) -->
+            <section class="section section-feature bg-light">
+                 <div class="section-content">
+                     <img src="https://via.placeholder.com/800x450/f5f5f7/1d1d1f?text=Feature+2+Visual" alt="Feature 2 visual description" class="feature-image">
+                    <h2 class="headline-medium">Stunning New Design</h2>
+                    <p class="body-copy">Crafted with premium materials for beauty and durability.</p>
+                     <div class="cta-links">
+                         <!-- This could link somewhere else or just be text -->
+                         <a href="#" class="link-arrow">See the Design</a>
+                     </div>
+                </div>
+            </section>
+
+             <!-- Grid Feature Section -->
+            <section class="section section-grid bg-white">
+                <div class="section-content">
+                     <h2 class="headline-medium">Why Product Name?</h2>
+                    <div class="grid-container">
+                        <div class="grid-item">
+                            <img src="https://via.placeholder.com/80x80/e0e0e0/333333?text=Icon1" alt="Icon 1" class="grid-icon">
+                            <h3 class="headline-small">All-Day Battery</h3>
+                            <p class="body-copy-small">Keep going from morning till night.</p>
+                        </div>
+                         <div class="grid-item">
+                            <img src="https://via.placeholder.com/80x80/e0e0e0/333333?text=Icon2" alt="Icon 2" class="grid-icon">
+                            <h3 class="headline-small">Pro Camera System</h3>
+                            <p class="body-copy-small">Capture your moments in breathtaking detail.</p>
+                        </div>
+                         <div class="grid-item">
+                            <img src="https://via.placeholder.com/80x80/e0e0e0/333333?text=Icon3" alt="Icon 3" class="grid-icon">
+                            <h3 class="headline-small">Enhanced Privacy</h3>
+                            <p class="body-copy-small">Your data stays safe and under your control.</p>
+                        </div>
+                        <div class="grid-item">
+                            <img src="https://via.placeholder.com/80x80/e0e0e0/333333?text=Icon4" alt="Icon 4" class="grid-icon">
+                            <h3 class="headline-small">Seamless Ecosystem</h3>
+                            <p class="body-copy-small">Works perfectly with your other devices.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- Specs Page -->
+        <div id="page-specs" class="page-section">
+            <section class="section bg-light">
+                <div class="section-content">
+                    <h1 class="headline-medium">Technical Specifications</h1>
+                    <p class="body-copy">Detailed specs coming soon...</p>
+                    <!-- Add tables or lists of specifications here -->
+                     <img src="https://via.placeholder.com/900x300/f5f5f7/1d1d1f?text=Detailed+Specs+Chart+Placeholder" alt="Specs Placeholder" style="margin-top: 30px;">
+                </div>
+            </section>
+        </div>
+
+        <!-- Support Page -->
+        <div id="page-support" class="page-section">
+            <section class="section bg-white">
+                <div class="section-content">
+                    <h1 class="headline-medium">Support</h1>
+                    <p class="body-copy">Find help, documentation, and contact options here.</p>
+                    <!-- Add support links, FAQs, etc. -->
+                    <div class="cta-links">
+                         <a href="#" class="button button-secondary">Visit Support Site</a>
+                         <a href="#" class="button button-secondary">Contact Us</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+         <!-- Buy Page -->
+        <div id="page-buy" class="page-section">
+            <section class="section bg-light">
+                <div class="section-content">
+                    <h1 class="headline-medium">Buy Product Name</h1>
+                    <p class="body-copy">Choose your configuration and place your order.</p>
+                    <!-- Add purchase options, configurator placeholder, etc. -->
+                     <img src="https://via.placeholder.com/800x400/f5f5f7/1d1d1f?text=Ordering+Options+Placeholder" alt="Buy Placeholder" style="margin-top: 30px;">
+                     <div class="cta-links" style="margin-top: 40px;">
+                         <a href="#" class="button button-primary">Add to Cart</a>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+         <!-- Footer Pages (Simple Placeholders) -->
+         <div id="page-privacy" class="page-section">
+             <section class="section bg-white">
+                 <div class="section-content" style="text-align: left; max-width: 800px;">
+                     <h1 class="headline-medium">Privacy Policy</h1>
+                     <p class="body-copy">Your privacy is important to us. [Full privacy policy text goes here...]</p>
+                 </div>
+             </section>
+         </div>
+         <div id="page-terms" class="page-section">
+            <section class="section bg-white">
+                <div class="section-content" style="text-align: left; max-width: 800px;">
+                    <h1 class="headline-medium">Terms of Use</h1>
+                    <p class="body-copy">By using this site, you agree to the following terms... [Full terms text goes here...]</p>
+                </div>
+            </section>
+        </div>
+         <div id="page-sales" class="page-section">
+            <section class="section bg-white">
+                <div class="section-content" style="text-align: left; max-width: 800px;">
+                    <h1 class="headline-medium">Sales Policy</h1>
+                    <p class="body-copy">Information about purchasing, shipping, returns... [Full sales policy text goes here...]</p>
+                </div>
+            </section>
+        </div>
+         <div id="page-legal" class="page-section">
+            <section class="section bg-white">
+                <div class="section-content" style="text-align: left; max-width: 800px;">
+                    <h1 class="headline-medium">Legal</h1>
+                    <p class="body-copy">Copyright notices, trademarks, and other legal information... [Full legal text goes here...]</p>
+                </div>
+            </section>
+        </div>
+         <div id="page-sitemap" class="page-section">
+            <section class="section bg-white">
+                <div class="section-content">
+                    <h1 class="headline-medium">Site Map</h1>
+                    <ul style="list-style: disc; margin-left: 20px; text-align: left; display: inline-block;">
+                        <li><a href="#" class="route-link" data-target="page-product">Product</a></li>
+                        <li><a href="#" class="route-link" data-target="page-features">Features</a></li>
+                        <li><a href="#" class="route-link" data-target="page-specs">Specs</a></li>
+                        <li><a href="#" class="route-link" data-target="page-support">Support</a></li>
+                        <li><a href="#" class="route-link" data-target="page-buy">Buy</a></li>
+                        <li><a href="#" class="route-link" data-target="page-privacy">Privacy Policy</a></li>
+                        <li><a href="#" class="route-link" data-target="page-terms">Terms of Use</a></li>
+                        <li><a href="#" class="route-link" data-target="page-sales">Sales Policy</a></li>
+                        <li><a href="#" class="route-link" data-target="page-legal">Legal</a></li>
+                    </ul>
+                </div>
+            </section>
+        </div>
+
+
+    </main>
+
+    <footer class="global-footer">
+        <div class="footer-content">
+            <p class="footer-copyright">Copyright © 2023 Your Company Name Inc. All rights reserved.</p>
+            <ul class="footer-links">
+                 <!-- Add route-link class and data-target to footer links -->
+                <li><a href="#" class="route-link" data-target="page-privacy">Privacy Policy</a></li>
+                <li><a href="#" class="route-link" data-target="page-terms">Terms of Use</a></li>
+                <li><a href="#" class="route-link" data-target="page-sales">Sales Policy</a></li>
+                <li><a href="#" class="route-link" data-target="page-legal">Legal</a></li>
+                <li><a href="#" class="route-link" data-target="page-sitemap">Site Map</a></li>
+            </ul>
+        </div>
+    </footer>
+
+    <script>
+        console.log("Apple-inspired landing page loaded (single file w/ routing).");
+
+        const routeLinks = document.querySelectorAll('.route-link');
+        const pageSections = document.querySelectorAll('.page-section');
+
+        // Function to show a specific page and hide others
+        function showPage(pageId) {
+            // console.log(`Attempting to show page: ${pageId}`); // Debugging
+            pageSections.forEach(section => {
+                if (section.id === pageId) {
+                    section.classList.add('active');
+                     // Scroll to top when changing page for better UX
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                } else {
+                    section.classList.remove('active');
+                }
+            });
+        }
+
+        // Add click listeners to all routing links
+        routeLinks.forEach(link => {
+            link.addEventListener('click', function(event) {
+                event.preventDefault(); // Stop default link behavior
+                const targetPageId = this.dataset.target; // Get target from data-target attribute
+
+                if (targetPageId) {
+                    showPage(targetPageId);
+                } else {
+                    console.warn('Route link clicked without a data-target:', this);
+                }
+            });
+        });
+
+        // Ensure the initial page ('page-product') is shown on load
+        // This is technically handled by the 'active' class in the HTML,
+        // but this ensures JS is aware if needed later.
+        // showPage('page-product'); // You can uncomment this if needed, but HTML class works
+
+    </script>
+
+</body>
+</html>
