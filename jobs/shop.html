@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop - Apple Clone</title>
+    <!-- Link to your main CSS -->
+    <link rel="stylesheet" href="static/css/style.css">
+    <!-- Optional: Link to specific shop CSS -->
+    <link rel="stylesheet" href="static/css/shop.css">
+    <style>
+        /* Placeholder Styles (Adapt with styles from appleclonesai repo) */
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+            line-height: 1.6;
+            color: #1d1d1f;
+            background-color: #f5f5f7; /* Light gray background */
+            margin: 0;
+            padding: 0;
+        }
+
+        .shop-container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+            display: flex;
+            gap: 30px;
+        }
+
+        /* Filters / Categories Sidebar */
+        .filter-sidebar {
+            flex: 0 0 200px; /* Fixed width sidebar */
+        }
+
+        .filter-sidebar h2 {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #1d1d1f;
+        }
+
+        .category-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .category-list li button {
+            display: block;
+            width: 100%;
+            padding: 8px 0;
+            margin-bottom: 5px;
+            background: none;
+            border: none;
+            text-align: left;
+            font-size: 0.95em;
+            color: #007aff; /* Apple blue link color */
+            cursor: pointer;
+            transition: color 0.2s ease;
+        }
+
+        .category-list li button:hover,
+        .category-list li button.active {
+            color: #1d1d1f; /* Darker color on hover/active */
+            font-weight: 600;
+        }
+
+        /* Product Display Area */
+        .product-display {
+            flex: 1; /* Takes remaining space */
+        }
+
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); /* Responsive grid */
+            gap: 25px;
+        }
+
+        .product-card {
+            background-color: #fff;
+            border-radius: 15px; /* Rounded corners */
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .product-card:hover {
+             transform: translateY(-5px);
+             box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+        }
+
+        .product-card img {
+            max-width: 80%;
+            height: 150px; /* Fixed height for consistency */
+            object-fit: contain; /* Scales image while preserving aspect ratio */
+            margin-bottom: 15px;
+        }
+
+        .product-card h3 {
+            font-size: 1.1em;
+            font-weight: 600;
+            margin: 10px 0 5px 0;
+            color: #1d1d1f;
+        }
+
+         .product-card .product-category {
+            font-size: 0.8em;
+            color: #6e6e73; /* Gray for category */
+            margin-bottom: 10px;
+            text-transform: uppercase;
+         }
+
+        .product-card .product-price {
+            font-size: 1em;
+            font-weight: 600;
+            color: #1d1d1f;
+            margin-bottom: 15px;
+        }
+
+        .product-card .buy-button {
+            display: inline-block;
+            background-color: #007aff;
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 20px; /* Pill shape */
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .product-card .buy-button:hover {
+            background-color: #005ecf; /* Darker blue on hover */
+        }
+
+
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-top: 40px;
+            padding: 20px 0;
+        }
+
+        .pagination button,
+        .pagination span {
+            margin: 0 5px;
+            padding: 8px 15px;
+            border: 1px solid #d2d2d7; /* Light gray border */
+            background-color: #fff;
+            color: #007aff;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 0.9em;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .pagination button:disabled {
+            color: #aeaeb2; /* Lighter gray for disabled */
+            cursor: not-allowed;
+            background-color: #f5f5f7;
+        }
+
+        .pagination button:not(:disabled):hover {
+            background-color: #e5e5e5;
+        }
+
+        .pagination span.active {
+            background-color: #007aff;
+            color: #fff;
+            border-color: #007aff;
+            font-weight: 600;
+            cursor: default;
+        }
+
+        .pagination span:not(.active) {
+             cursor: pointer;
+        }
+
+         /* Utility class for hiding elements */
+        .hidden {
+            display: none !important; /* Use !important cautiously, good for JS toggling */
+        }
+
+        /* Responsive Adjustments */
+        @media (max-width: 768px) {
+            .shop-container {
+                flex-direction: column;
+            }
+            .filter-sidebar {
+                flex: 0 0 auto; /* Allow sidebar to shrink */
+                width: 100%;
+                margin-bottom: 20px;
+            }
+            .product-grid {
+                 grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+                 gap: 15px;
+            }
+            .product-card {
+                padding: 15px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+    <!-- You might include a header here from your base project -->
+    <!-- <header>...</header> -->
+
+    <div class="shop-container">
+        <!-- Filter Sidebar -->
+        <aside class="filter-sidebar">
+            <h2>Categories</h2>
+            <ul class="category-list" id="category-list">
+                <li><button data-filter="all" class="active">All Products & Services</button></li>
+                <li><button data-filter="goods">Goods</button></li>
+                <li><button data-filter="services">Services</button></li>
+                <hr style="border: none; border-top: 1px solid #d2d2d7; margin: 10px 0;">
+                <!-- Specific Categories (could be dynamically generated) -->
+                <li><button data-filter="iphone">iPhone</button></li>
+                <li><button data-filter="macbook">MacBook</button></li>
+                <li><button data-filter="ipad">iPad</button></li>
+                <li><button data-filter="watch">Apple Watch</button></li>
+                <li><button data-filter="music">Apple Music</button></li>
+                <li><button data-filter="icloud">iCloud+</button></li>
+                <li><button data-filter="tv">Apple TV+</button></li>
+                <li><button data-filter="arcade">Apple Arcade</button></li>
+            </ul>
+        </aside>
+
+        <!-- Product Display Area -->
+        <main class="product-display">
+            <div class="product-grid" id="product-grid">
+                <!-- Product cards will be populated here (or loaded via JS) -->
+                <!-- Example Product Card -->
+                <div class="product-card" data-category="iphone goods">
+                    <img src="images/product1.jpg" alt="iPhone 15 Pro">
+                    <h3>iPhone 15 Pro</h3>
+                    <p class="product-category">Goods / iPhone</p>
+                    <p class="product-price">From $999</p>
+                    <button class="buy-button">Buy</button>
+                </div>
+                <div class="product-card" data-category="macbook goods">
+                    <img src="images/product2.jpg" alt="MacBook Air M3">
+                    <h3>MacBook Air M3</h3>
+                    <p class="product-category">Goods / MacBook</p>
+                    <p class="product-price">From $1099</p>
+                    <button class="buy-button">Buy</button>
+                </div>
+                <div class="product-card" data-category="ipad goods">
+                    <img src="images/product3.jpg" alt="iPad Pro">
+                    <h3>iPad Pro</h3>
+                    <p class="product-category">Goods / iPad</p>
+                    <p class="product-price">From $799</p>
+                    <button class="buy-button">Buy</button>
+                </div>
+                 <div class="product-card" data-category="watch goods">
+                    <img src="images/product4.jpg" alt="Apple Watch Series 9">
+                    <h3>Apple Watch Series 9</h3>
+                    <p class="product-category">Goods / Watch</p>
+                    <p class="product-price">From $399</p>
+                    <button class="buy-button">Buy</button>
+                </div>
+                <div class="product-card" data-category="music services">
+                    <img src="images/service1.png" alt="Apple Music">
+                    <h3>Apple Music</h3>
+                    <p class="product-category">Services / Music</p>
+                    <p class="product-price">$10.99/month</p>
+                    <button class="buy-button">Try it Free</button>
+                </div>
+                <div class="product-card" data-category="icloud services">
+                    <img src="images/service2.png" alt="iCloud+">
+                    <h3>iCloud+</h3>
+                     <p class="product-category">Services / iCloud</p>
+                    <p class="product-price">From $0.99/month</p>
+                    <button class="buy-button">Learn More</button>
+                </div>
+                 <div class="product-card" data-category="tv services">
+                    <img src="images/service3.png" alt="Apple TV+">
+                    <h3>Apple TV+</h3>
+                     <p class="product-category">Services / TV</p>
+                    <p class="product-price">$9.99/month</p>
+                    <button class="buy-button">Try it Free</button>
+                </div>
+                 <div class="product-card" data-category="arcade services">
+                    <img src="images/service4.png" alt="Apple Arcade">
+                    <h3>Apple Arcade</h3>
+                     <p class="product-category">Services / Arcade</p>
+                    <p class="product-price">$6.99/month</p>
+                    <button class="buy-button">Try it Free</button>
+                </div>
+                 <!-- Add more products/services -->
+                  <div class="product-card" data-category="iphone goods">
+                    <img src="images/product1.jpg" alt="iPhone 15">
+                    <h3>iPhone 15</h3>
+                    <p class="product-category">Goods / iPhone</p>
+                    <p class="product-price">From $799</p>
+                    <button class="buy-button">Buy</button>
+                </div>
+                 <div class="product-card" data-category="macbook goods">
+                    <img src="images/product2.jpg" alt="MacBook Pro M3">
+                    <h3>MacBook Pro M3</h3>
+                    <p class="product-category">Goods / MacBook</p>
+                    <p class="product-price">From $1599</p>
+                    <button class="buy-button">Buy</button>
+                </div>
+                 <div class="product-card" data-category="watch goods">
+                    <img src="images/product4.jpg" alt="Apple Watch Ultra 2">
+                    <h3>Apple Watch Ultra 2</h3>
+                    <p class="product-category">Goods / Watch</p>
+                    <p class="product-price">From $799</p>
+                    <button class="buy-button">Buy</button>
+                </div>
+                 <div class="product-card" data-category="ipad goods">
+                    <img src="images/product3.jpg" alt="iPad Air">
+                    <h3>iPad Air</h3>
+                    <p class="product-category">Goods / iPad</p>
+                    <p class="product-price">From $599</p>
+                    <button class="buy-button">Buy</button>
+                </div>
+
+            </div>
+
+            <!-- Pagination Controls -->
+            <nav class="pagination" id="pagination-controls" aria-label="Product page navigation">
+                <!-- Pagination buttons will be generated by JS -->
+            </nav>
+        </main>
+    </div>
+
+    <!-- You might include a footer here -->
+    <!-- <footer>...</footer> -->
+
+    <!-- Link to your Shop JavaScript -->
+    <script src="js/shop.js"></script>
+</body>
+</html>

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Panel{% endblock %}
+
+{% block head_extra %}
+<style>
+    .admin-container { max-width: 1000px; margin: 20px auto; padding: 15px; background-color: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+    .admin-section { margin-bottom: 30px; padding: 15px; border: 1px solid #eee; border-radius: 5px; }
+    .admin-section h2 { margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-bottom: 15px; font-size: 1.4em; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f9f9f9; }
+    .delete-form { display: inline; }
+    .delete-button { background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; }
+    .delete-button:hover { background-color: #c82333; }
+    form label { display: block; margin-bottom: 5px; font-weight: bold; }
+    form input[type="text"], form select { width: calc(100% - 22px); padding: 8px; margin-bottom: 10px; border: 1px solid #ccc; border-radius: 4px; }
+    form button { background-color: #007bff; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; }
+    form button:hover { background-color: #0056b3; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="admin-container">
+    <h1>Admin Panel</h1>
+
+    <!-- Manage Categories Section -->
+    <div class="admin-section">
+        <h2>Manage Categories</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Slug</th>
+                    <th>Type</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for category in categories %}
+                <tr>
+                    <td>{{ category.id }}</td>
+                    <td>{{ category.name }}</td>
+                    <td>{{ category.slug }}</td>
+                    <td>{{ category.type }}</td>
+                    <td>
+                        <!-- Add Edit link/button here later -->
+                        <form class="delete-form" action="{{ url_for('delete_category', cat_id=category.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete category \'{{ category.name }}\'? This cannot be undone.');">
+                            <button type="submit" class="delete-button">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5">No categories found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Add New Category</h3>
+        <form action="{{ url_for('add_category') }}" method="POST">
+            <label for="cat_name">Name:</label>
+            <input type="text" id="cat_name" name="name" required>
+
+            <label for="cat_slug">Slug (e.g., 'iphone-15'):</label>
+            <input type="text" id="cat_slug" name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" title="Lowercase letters, numbers, and hyphens only.">
+
+            <label for="cat_type">Type:</label>
+            <select id="cat_type" name="type" required>
+                <option value="goods">Goods</option>
+                <option value="services">Services</option>
+                 <option value="meta">Meta (for filtering only)</option>
+            </select>
+
+            <button type="submit">Add Category</button>
+        </form>
+    </div>
+
+    <!-- Manage Products Section -->
+    <div class="admin-section">
+        <h2>Manage Products</h2>
+         <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Price</th>
+                    <th>Image URL</th>
+                    <th>Category</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for product in products %}
+                <tr>
+                    <td>{{ product.id }}</td>
+                    <td>{{ product.name }}</td>
+                    <td>{{ product.price }}</td>
+                    <td>{{ product.image_url }}</td>
+                     <td>{{ product.category_name }}</td>
+                    <td>
+                         <!-- Add Edit link/button here later -->
+                        <form class="delete-form" action="{{ url_for('delete_product', prod_id=product.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete product \'{{ product.name }}\'?');">
+                            <button type="submit" class="delete-button">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6">No products found.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h3>Add New Product</h3>
+        <form action="{{ url_for('add_product') }}" method="POST">
+             <label for="prod_name">Name:</label>
+            <input type="text" id="prod_name" name="name" required>
+
+             <label for="prod_price">Price (e.g., '$999' or 'From $10/mo'):</label>
+            <input type="text" id="prod_price" name="price" required>
+
+            <label for="prod_image">Image URL (e.g., /static/images/my_product.jpg):</label>
+            <input type="text" id="prod_image" name="image_url" required value="/static/images/">
+
+            <label for="prod_category">Category:</label>
+            <select id="prod_category" name="category_id" required>
+                 <option value="">-- Select Category --</option>
+                 {% for category in categories %}
+                     {% if category.type != 'meta' %} {# Only allow assigning to non-meta categories #}
+                     <option value="{{ category.id }}">{{ category.name }} ({{ category.type }})</option>
+                     {% endif %}
+                 {% endfor %}
+            </select>
+
+            <button type="submit">Add Product</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Apple Clone{% endblock %}</title>
+    <!-- Link CSS using url_for -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head_extra %}{% endblock %} <!-- For page-specific CSS/JS in head -->
+     <style>
+        /* Basic flash message styling */
+        .flash-messages { list-style: none; padding: 0; margin: 1em 0; }
+        .flash-messages li { padding: 0.75em; margin-bottom: 0.5em; border-radius: 4px; }
+        .flash-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .flash-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .flash-warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        nav { background-color: #f8f8f8; padding: 10px 20px; border-bottom: 1px solid #ddd; margin-bottom: 20px;}
+        nav a { margin-right: 15px; text-decoration: none; color: #007aff; }
+        nav a:hover { text-decoration: underline; }
+     </style>
+</head>
+<body>
+    <nav>
+        <a href="{{ url_for('shop_page') }}">Shop</a>
+        <a href="{{ url_for('admin_page') }}">Admin</a>
+        <!-- Add other common navigation links -->
+    </nav>
+
+    <main class="content">
+        <!-- Flash messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <ul class="flash-messages">
+            {% for category, message in messages %}
+              <li class="flash-{{ category }}">{{ message }}</li>
+            {% endfor %}
+            </ul>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}
+        <!-- Page-specific content goes here -->
+        {% endblock %}
+    </main>
+
+    <footer>
+        <!-- Common footer content -->
+    </footer>
+
+    {% block scripts %}
+    <!-- Common scripts can go here -->
+    {% endblock %}
+</body>
+</html>
